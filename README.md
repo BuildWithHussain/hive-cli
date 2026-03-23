@@ -63,8 +63,11 @@ hive task list -p "Hive"                   # by project name
 hive task list -s "In Progress"            # by status
 hive task list -a dev@example.com          # by assignee
 
-# View task details — by title or ID
+# View task details + comments — by title or ID
 hive task view "Fix login"
+
+# Add a comment to a task
+hive task comment "Fix login" "looks good, merging"
 
 # Assign a task — by title
 hive task assign "Fix login" dev@example.com
@@ -126,7 +129,8 @@ hive
 └── task
     ├── create TITLE       Create a new task (-p accepts project name)
     ├── list               List tasks with filters
-    ├── view TASK          View task details (accepts title or ID)
+    ├── view TASK          View full details + comments (accepts title or ID)
+    ├── comment TASK MSG   Add a comment to a task (accepts title or ID)
     ├── assign TASK USER   Assign a task (accepts title or ID)
     ├── done TASK          Mark a task as done (accepts title or ID)
     └── update TASK        Update task fields (accepts title or ID)

@@ -24,6 +24,8 @@ Quick Start:
 Common Workflows:
   hive task list --mine                       Show my open tasks
   hive task list -p "My Project" -s "To Do"   Filter by project name & status
+  hive task view "Fix bug"                    View full details + comments
+  hive task comment "Fix bug" "looks good"    Add a comment to a task
   hive task update "Fix bug" --priority High
   hive dashboard                              Personal dashboard overview
   hive project list                           List all projects
