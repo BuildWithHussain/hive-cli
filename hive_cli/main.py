@@ -196,6 +196,22 @@ def task_list(project: str, status: str, assigned: str, mine: bool, limit: int):
         console.print("No tasks found.")
         return
 
+    if mine:
+        _print_tasks_grouped_by_project(client, tasks)
+    else:
+        _print_tasks_table(tasks)
+
+
+STATUS_STYLES = {
+    "Done": "green",
+    "In Progress": "yellow",
+    "Blocked": "red",
+    "Backlog": "dim",
+    "To Do": "cyan",
+}
+
+
+def _print_tasks_table(tasks: list[dict]):
     table = Table(title="Tasks")
     table.add_column("ID", style="dim")
     table.add_column("Title", style="bold")
@@ -204,22 +220,46 @@ def task_list(project: str, status: str, assigned: str, mine: bool, limit: int):
     table.add_column("Assigned To")
     table.add_column("Due Date")
     for t in tasks:
-        status_style = {
-            "Done": "green",
-            "In Progress": "yellow",
-            "Blocked": "red",
-            "Backlog": "dim",
-            "To Do": "cyan",
-        }.get(t.get("status", ""), "")
+        style = STATUS_STYLES.get(t.get("status", ""), "")
         table.add_row(
             t["name"],
             t["title"],
-            f"[{status_style}]{t.get('status', '')}[/]",
+            f"[{style}]{t.get('status', '')}[/]",
             t.get("priority", ""),
             t.get("assigned_to", ""),
             str(t.get("due_date", "") or ""),
         )
     console.print(table)
+
+
+def _print_tasks_grouped_by_project(client, tasks: list[dict]):
+    # Collect unique project IDs and fetch their titles
+    project_ids = list({t.get("project") for t in tasks if t.get("project")})
+    project_titles = {}
+    if project_ids:
+        projects = client.get_list(
+            "Hive Project",
+            fields=["name", "title"],
+            filters={"name": ["in", project_ids]},
+            limit=len(project_ids),
+        )
+        project_titles = {p["name"]: p["title"] for p in projects}
+
+    # Group tasks by project
+    grouped: dict[str, list[dict]] = {}
+    for t in tasks:
+        pid = t.get("project", "No Project")
+        grouped.setdefault(pid, []).append(t)
+
+    for pid, project_tasks in grouped.items():
+        title = project_titles.get(pid, pid)
+        console.print(f"\n[bold cyan]{title}[/]")
+        for t in project_tasks:
+            style = STATUS_STYLES.get(t.get("status", ""), "")
+            due = f"  [dim](due {t['due_date']})[/]" if t.get("due_date") else ""
+            console.print(f"  [{style}]{t.get('status', ''):<12}[/] {t['title']}{due}  [dim]{t['name']}[/]")
+
+    console.print()
 
 
 @task.command("view")
