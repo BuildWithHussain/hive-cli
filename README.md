@@ -7,13 +7,14 @@ Create tasks, assign them, mark them done, and check your dashboard — all from
 ## Installation
 
 ```bash
-pip install /path/to/bwh_hive/cli
+pip install git+https://github.com/BuildWithHussain/hive-cli.git
 ```
 
 Or install in editable mode for development:
 
 ```bash
-cd cli
+git clone https://github.com/BuildWithHussain/hive-cli.git
+cd hive-cli
 pip install -e .
 ```
 
@@ -33,15 +34,22 @@ You'll be prompted for your site URL, API key, and API secret. Credentials are s
 
 ## Usage
 
+### Smart Name Resolution
+
+You don't need to remember project IDs or task IDs. The CLI resolves names automatically:
+
+- **Projects** — pass a project name, slug, or ID. If ambiguous, you'll be prompted to pick.
+- **Tasks** — pass a task title (or part of it) or an ID. If multiple match, you'll pick interactively.
+
 ### Tasks
 
 ```bash
-# Create a task
-hive task create "Fix login redirect bug" -p "PROJ-001" --priority High
+# Create a task — use the project name, not the ID
+hive task create "Fix login redirect bug" -p "Hive" --priority High
 
 # Create with all options
 hive task create "Add dark mode" \
-  -p "PROJ-001" \
+  -p "Hive" \
   --priority Medium \
   --status "To Do" \
   --assign dev@example.com \
@@ -51,21 +59,21 @@ hive task create "Add dark mode" \
 # List tasks
 hive task list                              # all tasks
 hive task list --mine                       # my tasks
-hive task list -p "PROJ-001"               # by project
+hive task list -p "Hive"                   # by project name
 hive task list -s "In Progress"            # by status
 hive task list -a dev@example.com          # by assignee
 
-# View task details
-hive task view TASK-00042
+# View task details — by title or ID
+hive task view "Fix login"
 
-# Assign a task
-hive task assign TASK-00042 dev@example.com
+# Assign a task — by title
+hive task assign "Fix login" dev@example.com
 
-# Mark as done
-hive task done TASK-00042
+# Mark as done — by title
+hive task done "Fix login"
 
-# Update fields
-hive task update TASK-00042 --status "In Progress" --priority Urgent --due 2026-04-01
+# Update fields — by title
+hive task update "Add dark mode" --status "In Progress" --priority Urgent --due 2026-04-01
 ```
 
 ### Projects
@@ -90,6 +98,21 @@ hive whoami     # show current user and site
 hive logout     # clear saved credentials
 ```
 
+## Interactive Picker
+
+When a name matches multiple results, the CLI shows a numbered list and lets you pick:
+
+```
+$ hive task done "login"
+
+Multiple tasks found:
+  1. Fix login redirect bug  [In Progress]  HIVE-TASK-00042
+  2. Add login page tests    [To Do]        HIVE-TASK-00051
+
+Pick a number: 1
+Task HIVE-TASK-00042 marked as Done
+```
+
 ## Command Reference
 
 ```
@@ -101,12 +124,12 @@ hive
 ├── project
 │   └── list               List projects
 └── task
-    ├── create TITLE       Create a new task
+    ├── create TITLE       Create a new task (-p accepts project name)
     ├── list               List tasks with filters
-    ├── view TASK_ID       View task details
-    ├── assign TASK USER   Assign a task to a user
-    ├── done TASK_ID       Mark a task as done
-    └── update TASK_ID     Update task fields
+    ├── view TASK          View task details (accepts title or ID)
+    ├── assign TASK USER   Assign a task (accepts title or ID)
+    ├── done TASK          Mark a task as done (accepts title or ID)
+    └── update TASK        Update task fields (accepts title or ID)
 ```
 
 ## Requirements

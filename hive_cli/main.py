@@ -5,6 +5,7 @@ from rich.console import Console
 from rich.table import Table
 
 from hive_cli.config import get_client, get_config, save_config
+from hive_cli.resolve import resolve_project, resolve_task
 
 console = Console()
 
@@ -14,18 +15,23 @@ Hive CLI - manage your projects and tasks from the terminal.
 
 \b
 Quick Start:
-  hive login                              Authenticate with your Hive instance
-  hive task create "Fix bug" -p PROJECT   Create a task
-  hive task assign TASK-001 user@mail.com Assign a task
-  hive task done TASK-001                 Mark a task as done
+  hive login                                  Authenticate with your Hive instance
+  hive task create "Fix bug" -p "My Project"  Create a task (use project name)
+  hive task assign "Fix bug" user@mail.com    Assign by task title
+  hive task done "Fix bug"                    Mark done by task title
 
 \b
 Common Workflows:
-  hive task list --mine                   Show my open tasks
-  hive task list -p PROJECT -s "To Do"    Filter tasks by project & status
-  hive task update TASK-001 --priority High --due 2026-04-01
-  hive dashboard                          Personal dashboard overview
-  hive project list                       List all projects
+  hive task list --mine                       Show my open tasks
+  hive task list -p "My Project" -s "To Do"   Filter by project name & status
+  hive task update "Fix bug" --priority High
+  hive dashboard                              Personal dashboard overview
+  hive project list                           List all projects
+
+\b
+Name Resolution:
+  Projects accept: name, slug, or ID (fuzzy matched)
+  Tasks accept: title search or ID (picks interactively if ambiguous)
 
 \b
 Authentication:
@@ -123,7 +129,7 @@ def task():
 
 @task.command("create")
 @click.argument("title")
-@click.option("--project", "-p", required=True, help="Project ID or name")
+@click.option("--project", "-p", required=True, help="Project name, slug, or ID")
 @click.option(
     "--priority",
     type=click.Choice(["Low", "Medium", "High", "Urgent"], case_sensitive=False),
@@ -138,10 +144,11 @@ def task():
 @click.option("--due", "-d", help="Due date (YYYY-MM-DD)")
 @click.option("--description", help="Task description")
 def task_create(title: str, project: str, priority: str, status: str, assign: str, due: str, description: str):
-    """Create a new task."""
+    """Create a new task. PROJECT can be a name, slug, or ID."""
     client = get_client()
+    project_id = resolve_project(client, project)
 
-    data = {"title": title, "project": project, "priority": priority, "status": status}
+    data = {"title": title, "project": project_id, "priority": priority, "status": status}
     if assign:
         data["assigned_to"] = assign
     if due:
@@ -155,7 +162,7 @@ def task_create(title: str, project: str, priority: str, status: str, assign: st
 
 
 @task.command("list")
-@click.option("--project", "-p", help="Filter by project")
+@click.option("--project", "-p", help="Filter by project (name, slug, or ID)")
 @click.option("--status", "-s", type=click.Choice(["Backlog", "To Do", "In Progress", "Done", "Blocked"], case_sensitive=False))
 @click.option("--assigned", "-a", help="Filter by assigned user email")
 @click.option("--mine", "-m", is_flag=True, help="Show only my tasks")
@@ -166,7 +173,7 @@ def task_list(project: str, status: str, assigned: str, mine: bool, limit: int):
 
     filters: dict = {"is_archived": 0}
     if project:
-        filters["project"] = project
+        filters["project"] = resolve_project(client, project)
     if status:
         filters["status"] = status
     if assigned:
@@ -216,8 +223,9 @@ def task_list(project: str, status: str, assigned: str, mine: bool, limit: int):
 @task.command("view")
 @click.argument("task_id")
 def task_view(task_id: str):
-    """View a task's details."""
+    """View a task's details. TASK_ID can be an ID or title search."""
     client = get_client()
+    task_id = resolve_task(client, task_id)
     t = client.get_doc("Hive Task", task_id)
 
     console.print(f"\n[bold]{t['title']}[/]  [dim]({t['name']})[/]")
@@ -235,8 +243,9 @@ def task_view(task_id: str):
 @click.argument("task_id")
 @click.argument("user_email")
 def task_assign(task_id: str, user_email: str):
-    """Assign a task to a user."""
+    """Assign a task to a user. TASK_ID can be an ID or title search."""
     client = get_client()
+    task_id = resolve_task(client, task_id)
     client.update_doc("Hive Task", task_id, {"assigned_to": user_email})
     console.print(f"Task [bold]{task_id}[/] assigned to [green]{user_email}[/]")
 
@@ -244,8 +253,9 @@ def task_assign(task_id: str, user_email: str):
 @task.command("done")
 @click.argument("task_id")
 def task_done(task_id: str):
-    """Mark a task as done."""
+    """Mark a task as done. TASK_ID can be an ID or title search."""
     client = get_client()
+    task_id = resolve_task(client, task_id)
     client.update_doc("Hive Task", task_id, {"status": "Done"})
     console.print(f"Task [bold]{task_id}[/] marked as [green]Done[/]")
 
@@ -258,7 +268,7 @@ def task_done(task_id: str):
 @click.option("--due", help="Due date (YYYY-MM-DD)")
 @click.option("--assign", help="Assign to user email")
 def task_update(task_id: str, title: str, status: str, priority: str, due: str, assign: str):
-    """Update a task's fields."""
+    """Update a task's fields. TASK_ID can be an ID or title search."""
     data = {}
     if title:
         data["title"] = title
@@ -276,6 +286,7 @@ def task_update(task_id: str, title: str, status: str, priority: str, due: str, 
         return
 
     client = get_client()
+    task_id = resolve_task(client, task_id)
     client.update_doc("Hive Task", task_id, data)
     console.print(f"Task [bold]{task_id}[/] updated.")
 
