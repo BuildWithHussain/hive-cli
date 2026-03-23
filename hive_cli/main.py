@@ -228,14 +228,36 @@ def task_view(task_id: str):
     task_id = resolve_task(client, task_id)
     t = client.get_doc("Hive Task", task_id)
 
-    console.print(f"\n[bold]{t['title']}[/]  [dim]({t['name']})[/]")
-    console.print(f"  Project:  {t.get('project', '-')}")
-    console.print(f"  Status:   {t.get('status', '-')}")
-    console.print(f"  Priority: {t.get('priority', '-')}")
-    console.print(f"  Assigned: {t.get('assigned_to', '-')}")
-    console.print(f"  Due:      {t.get('due_date') or '-'}")
+    status_style = {
+        "Done": "green", "In Progress": "yellow", "Blocked": "red",
+        "Backlog": "dim", "To Do": "cyan",
+    }.get(t.get("status", ""), "")
+    priority_style = {
+        "Urgent": "bold red", "High": "red", "Medium": "yellow", "Low": "dim",
+    }.get(t.get("priority", ""), "")
+
+    console.print(f"\n[bold]{t['title']}[/]  [dim]{t['name']}[/]")
+    console.print()
+    console.print(f"  Status:       [{status_style}]{t.get('status', '-')}[/]")
+    console.print(f"  Priority:     [{priority_style}]{t.get('priority', '-')}[/]")
+    console.print(f"  Project:      {t.get('project', '-')}")
+    console.print(f"  Assigned To:  {t.get('assigned_to') or '-'}")
+    console.print(f"  Size:         {t.get('size') or '-'}")
+    console.print(f"  Start Date:   {t.get('start_date') or '-'}")
+    console.print(f"  Due Date:     {t.get('due_date') or '-'}")
+    console.print(f"  Completed On: {t.get('completed_on') or '-'}")
+    console.print(f"  Milestone:    {t.get('milestone') or '-'}")
+    console.print(f"  Depends On:   {t.get('depends_on') or '-'}")
+    console.print(f"  PR Link:      {t.get('pr_link') or '-'}")
+    console.print(f"  UAT Status:   {t.get('uat_status') or '-'}")
+    if t.get("uat_approved_by"):
+        console.print(f"  UAT By:       {t['uat_approved_by']} ({t.get('uat_date', '')})")
+    console.print(f"  Created By:   {t.get('owner', '-')}")
+    console.print(f"  Created:      {t.get('creation', '-')}")
+    console.print(f"  Modified:     {t.get('modified', '-')}")
     if t.get("description"):
-        console.print(f"\n  [dim]{t['description']}[/]")
+        console.print(f"\n  [bold]Description:[/]")
+        console.print(f"  [dim]{t['description']}[/]")
     console.print()
 
 
