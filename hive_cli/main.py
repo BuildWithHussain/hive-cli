@@ -258,7 +258,39 @@ def task_view(task_id: str):
     if t.get("description"):
         console.print(f"\n  [bold]Description:[/]")
         console.print(f"  [dim]{t['description']}[/]")
+
+    # Fetch comments
+    comments = client.get_list(
+        "Hive Task Comment",
+        fields=["content", "posted_by", "creation"],
+        filters={"task": task_id, "is_archived": 0},
+        order_by="creation asc",
+        limit=50,
+    )
+    if comments:
+        console.print(f"\n  [bold]Comments ({len(comments)}):[/]")
+        for comment in comments:
+            console.print(f"\n  [cyan]{comment.get('posted_by', '')}[/]  [dim]{comment.get('creation', '')}[/]")
+            console.print(f"  {comment.get('content', '')}")
+
     console.print()
+
+
+@task.command("comment")
+@click.argument("task_id")
+@click.argument("content")
+def task_comment(task_id: str, content: str):
+    """Add a comment to a task. TASK_ID can be an ID or title search."""
+    client = get_client()
+    task_id = resolve_task(client, task_id)
+    user = client.call_method("frappe.auth.get_logged_user")
+    result = client.create_doc("Hive Task Comment", {
+        "task": task_id,
+        "content": content,
+        "posted_by": user,
+    })
+    name = result.get("name", result) if isinstance(result, dict) else result
+    console.print(f"Comment [bold green]{name}[/] added to {task_id}")
 
 
 @task.command("assign")
