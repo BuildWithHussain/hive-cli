@@ -62,6 +62,7 @@ hive task list --mine                       # my tasks
 hive task list -p "Hive"                   # by project name
 hive task list -s "In Progress"            # by status
 hive task list -a dev@example.com          # by assignee
+hive task list --sort "priority asc"       # custom sort (default: due_date desc)
 
 # View task details + comments — by title or ID
 hive task view "Fix login"

@@ -24,6 +24,7 @@ Quick Start:
 Common Workflows:
   hive task list --mine                       Show my open tasks
   hive task list -p "My Project" -s "To Do"   Filter by project name & status
+  hive task list -p "My Project" --sort "priority asc"  Sort by priority
   hive task view "Fix bug"                    View full details + comments
   hive task comment "Fix bug" "looks good"    Add a comment to a task
   hive task update "Fix bug" --priority High
@@ -169,7 +170,8 @@ def task_create(title: str, project: str, priority: str, status: str, assign: st
 @click.option("--assigned", "-a", help="Filter by assigned user email")
 @click.option("--mine", "-m", is_flag=True, help="Show only my tasks")
 @click.option("--limit", "-l", default=20, help="Number of tasks to show")
-def task_list(project: str, status: str, assigned: str, mine: bool, limit: int):
+@click.option("--sort", default="due_date desc", help="Sort order (e.g. 'due_date desc', 'priority asc', 'modified desc')")
+def task_list(project: str, status: str, assigned: str, mine: bool, limit: int, sort: str):
     """List tasks with optional filters."""
     client = get_client()
 
@@ -188,7 +190,7 @@ def task_list(project: str, status: str, assigned: str, mine: bool, limit: int):
         "Hive Task",
         fields=["name", "title", "status", "priority", "assigned_to", "project", "due_date"],
         filters=filters,
-        order_by="modified desc",
+        order_by=sort,
         limit=limit,
     )
 
